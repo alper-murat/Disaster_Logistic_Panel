@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARAJ Yönetim Merkezi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <style>
+        :root {
+            --slate-950: #020617;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-500: #64748b;
+            --slate-400: #94a3b8;
+            --slate-300: #cbd5e1;
+            --emerald-500: #10b981;
+            --emerald-400: #34d399;
+            --red-500: #ef4444;
+            --red-400: #f87171;
+            --purple-400: #c084fc;
+            --purple-500: #a855f7;
+            --purple-600: #9333ea;
+            --pink-500: #ec4899;
+            --pink-600: #db2777;
+            --yellow-500: #eab308;
+            --yellow-400: #facc15;
+            --cyan-400: #22d3ee;
+            --cyan-500: #06b6d4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--slate-950);
+            color: var(--slate-300);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 56px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--slate-800);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--emerald-500);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: var(--slate-500);
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .action-btn .btn-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* Match Button - Cyan/Emerald */
+        .btn-match {
+            background: linear-gradient(135deg, #06b6d4 0%, #10b981 100%);
+            color: #000;
+            box-shadow:
+                0 4px 15px rgba(6, 182, 212, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-match:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow:
+                0 8px 30px rgba(6, 182, 212, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-match:active:not(:disabled) {
+            transform: translateY(-1px) scale(1.01);
+        }
+
+        /* Chaos Button - Purple/Pink Animated */
+        .btn-chaos {
+            background: linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #f472b6 100%);
+            background-size: 200% 200%;
+            color: #fff;
+            animation: chaosGradient 4s ease infinite, chaosPulse 2s ease-in-out infinite;
+            box-shadow:
+                0 4px 20px rgba(124, 58, 237, 0.5),
+                0 0 40px rgba(219, 39, 119, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-chaos:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow:
+                0 10px 40px rgba(124, 58, 237, 0.7),
+                0 0 60px rgba(219, 39, 119, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-chaos:active:not(:disabled) {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        @keyframes chaosGradient {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes chaosPulse {
+
+            0%,
+            100% {
+                box-shadow:
+                    0 4px 20px rgba(124, 58, 237, 0.5),
+                    0 0 40px rgba(219, 39, 119, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            }
+
+            50% {
+                box-shadow:
+                    0 6px 30px rgba(124, 58, 237, 0.7),
+                    0 0 60px rgba(219, 39, 119, 0.5),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .clock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--emerald-400);
+            letter-spacing: 1px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--emerald-400);
+        }
+
+        .refresh-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--slate-400);
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--slate-700);
+            color: #fff;
+        }
+
+        .refresh-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            background: var(--slate-900);
+            padding: 8px 20px;
+            border-bottom: 1px solid var(--slate-800);
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--cyan-400);
+        }
+
+        .progress-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: var(--slate-800);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan-500), var(--emerald-400));
+            border-radius: 3px;
+            transition: width 0.3s;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .progress-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--slate-400);
+            min-width: 35px;
+        }
+
+        /* Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 56px);
+        }
+
+        /* Left Sidebar */
+        .left-sidebar {
+            width: 300px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border-right: 1px solid var(--slate-800);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-section:first-child {
+            border-bottom: 1px solid var(--slate-800);
+        }
+
+        .section-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent);
+            border-bottom: 1px solid var(--slate-800);
+        }
+
+        .section-header.supply-header {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-title.alerts {
+            color: var(--red-400);
+        }
+
+        .section-title.supplies {
+            color: var(--cyan-400);
+        }
+
+        .section-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 8px;
+            background: var(--slate-800);
+            border-radius: 10px;
+        }
+
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .notification-item {
+            padding: 12px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--slate-800);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .notification-item:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: var(--slate-700);
+        }
+
+        .notification-item.critical {
+            border-left: 3px solid var(--red-500);
+        }
+
+        .notification-item.warning {
+            border-left: 3px solid var(--yellow-500);
+        }
+
+        .notification-item.stable {
+            border-left: 3px solid var(--emerald-500);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .notification-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .category-badge {
+            font-size: 9px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .notification-location {
+            font-size: 11px;
+            color: var(--slate-500);
+            margin-bottom: 8px;
+        }
+
+        .notification-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+
+        .notification-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .notification-value.negative {
+            color: var(--red-400);
+        }
+
+        .notification-value.positive {
+            color: var(--emerald-400);
+        }
+
+        /* Progress bar in cards */
+        .stock-progress {
+            margin-top: 8px;
+        }
+
+        .stock-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--slate-500);
+            margin-bottom: 4px;
+        }
+
+        .stock-bar {
+            height: 4px;
+            background: var(--slate-800);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stock-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .stock-fill.high {
+            background: var(--emerald-500);
+        }
+
+        .stock-fill.medium {
+            background: var(--yellow-500);
+        }
+
+        .stock-fill.low {
+            background: var(--red-500);
+        }
+
+        .resupply-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+            margin-top: 10px;
+            padding: 6px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 6px;
+            color: var(--emerald-400);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .resupply-btn:hover {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: var(--emerald-500);
+        }
+
+        .resupply-btn svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        /* Stat Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--slate-800);
+            border-radius: 14px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--slate-600);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card.active {
+            border-color: var(--cyan-500);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--slate-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+        }
+
+        .stat-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 1.5;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .stat-card.success .stat-value {
+            color: var(--emerald-400);
+        }
+
+        .stat-card.danger .stat-value {
+            color: var(--red-400);
+        }
+
+        .stat-card.info .stat-value {
+            color: var(--cyan-400);
+        }
+
+        .stat-card.ai .stat-value {
+            color: var(--purple-400);
+        }
+
+        .stat-bar {
+            margin-top: 10px;
+            height: 3px;
+            background: var(--slate-800);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s;
+        }
+
+        .stat-trend {
+            margin-top: 8px;
+            font-size: 10px;
+            color: var(--slate-500);
+        }
+
+        /* Map Container */
+        .map-container {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--slate-800);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .map-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.1), transparent);
+            border-bottom: 1px solid var(--slate-800);
+        }
+
+        .map-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--cyan-400);
+        }
+
+        .map-legend {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--slate-400);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.full {
+            background: var(--emerald-500);
+        }
+
+        .legend-dot.partial {
+            background: var(--yellow-500);
+        }
+
+        .legend-dot.empty {
+            background: var(--red-500);
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100% - 44px);
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 56px;
+            left: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .map-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--slate-700);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--slate-400);
+        }
+
+        .map-btn:hover {
+            background: var(--slate-800);
+            color: #fff;
+        }
+
+        .map-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 1.5;
+        }
+
+        .layer-panel {
+            position: absolute;
+            top: 56px;
+            right: 12px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--slate-700);
+            border-radius: 10px;
+            padding: 12px;
+            min-width: 180px;
+        }
+
+        .layer-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--slate-500);
+            margin-bottom: 10px;
+        }
+
+        .layer-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 11px;
+            color: var(--slate-300);
+            cursor: pointer;
+        }
+
+        .layer-option input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--emerald-500);
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--slate-800);
+            border-radius: 6px;
+            padding: 2px;
+            margin-top: 10px;
+        }
+
+        .view-toggle-btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: center;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--slate-400);
+            transition: all 0.2s;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--slate-700);
+            color: #fff;
+        }
+
+        /* Right Sidebar - AI Terminal */
+        .right-sidebar {
+            width: 340px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border-left: 1px solid var(--slate-800);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-header {
+            padding: 12px 16px;
+            background: linear-gradient(90deg, rgba(168, 85, 247, 0.1), transparent);
+            border-bottom: 1px solid var(--slate-800);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ai-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--purple-400);
+        }
+
+        .ai-status {
+            width: 8px;
+            height: 8px;
+            background: var(--purple-400);
+            border-radius: 50%;
+            animation: aiPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes aiPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .ai-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2px;
+            padding: 6px 10px;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-indicator {
+            width: 3px;
+            margin-right: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .log-indicator.system {
+            background: var(--slate-500);
+        }
+
+        .log-indicator.success {
+            background: var(--emerald-500);
+        }
+
+        .log-indicator.warning {
+            background: var(--yellow-500);
+        }
+
+        .log-indicator.error {
+            background: var(--red-500);
+        }
+
+        .log-indicator.ai {
+            background: var(--purple-400);
+        }
+
+        .log-content {
+            flex: 1;
+        }
+
+        .log-time {
+            color: var(--slate-600);
+            margin-right: 8px;
+        }
+
+        .log-message {
+            color: var(--slate-400);
+        }
+
+        .log-message.system {
+            color: var(--slate-400);
+        }
+
+        .log-message.success {
+            color: var(--emerald-400);
+        }
+
+        .log-message.warning {
+            color: var(--yellow-400);
+        }
+
+        .log-message.error {
+            color: var(--red-400);
+        }
+
+        .log-message.ai {
+            color: var(--purple-400);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--slate-700);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--slate-600);
+        }
+
+        /* Leaflet overrides */
+        .leaflet-container {
+            background: var(--slate-950);
+        }
+
+        .leaflet-control-zoom {
+            display: none;
+        }
+
+        .leaflet-control-attribution {
+            display: none;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: var(--slate-800);
+            color: #fff;
+            border-radius: 8px;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--slate-800);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="status-dot"></div>
+            <div>
+                <div class="brand">GARAJ YÖNETİM MERKEZİ</div>
+                <div class="brand-sub">Disaster Logistics & Crisis Management</div>
+            </div>
+        </div>
+        <div class="header-center">
+            <button class="action-btn btn-match" id="matchBtn" onclick="runMatching()">
+                <span class="btn-icon">⚡</span>
+                EŞLEŞTİR
+            </button>
+            <button class="action-btn btn-chaos" id="chaosBtn" onclick="simulateChaos()">
+                <span class="btn-icon">🌪️</span>
+                KAOS SİMÜLASYONU
+            </button>
+        </div>
+
+        <div class="header-right">
+            <div class="status-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                SİSTEM AKTİF
+            </div>
+            <div class="clock" id="clock">--:--:--</div>
+            <button class="refresh-btn" onclick="refreshAll()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-wrapper">
+            <span class="progress-label">⚡ ROTA HESAPLANIYOR</span>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+            <span class="progress-text" id="progressText">0%</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <div class="section-title alerts">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        SAHA BİLDİRİMLERİ
+                    </div>
+                    <span class="section-count" id="alertCount">--</span>
+                </div>
+                <div class="notification-list" id="alertList">
+                    <div class="notification-item critical">
+                        <div class="notification-header">
+                            <div class="notification-title">Kadıköy Acil Durum</div>
+                            <span class="category-badge" style="background: #dc2626;">TIBBİ</span>
+                        </div>
+                        <div class="notification-location">📍 Kadıköy Sahil</div>
+                        <div class="notification-stats">
+                            <span>Acil İhtiyaç</span>
+                            <span class="notification-value negative">-150 Adet</span>
+                        </div>
+                    </div>
+                    <div class="notification-item critical">
+                        <div class="notification-header">
+                            <div class="notification-title">Üsküdar Hastanesi</div>
+                            <span class="category-badge" style="background: #2563eb;">SU</span>
+                        </div>
+                        <div class="notification-location">📍 Üsküdar Merkez</div>
+                        <div class="notification-stats">
+                            <span>Kritik Seviye</span>
+                            <span class="notification-value negative">-320 Adet</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-header supply-header">
+                    <div class="section-title supplies">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                            </path>
+                        </svg>
+                        LOJİSTİK MERKEZLERİ
+                    </div>
+                    <span class="section-count" id="supplyCount">--</span>
+                </div>
+                <div class="notification-list" id="supplyList">
+                    <div class="notification-item stable">
+                        <div class="notification-header">
+                            <div class="notification-title">Merkez Depo A</div>
+                            <span class="category-badge" style="background: #16a34a;">GIDA</span>
+                        </div>
+                        <div class="notification-location">📍 Ataşehir</div>
+                        <div class="stock-progress">
+                            <div class="stock-label"><span>Stok Durumu</span><span class="mono">425/500</span></div>
+                            <div class="stock-bar">
+                                <div class="stock-fill high" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <button class="resupply-btn" onclick="resupplyWarehouse('1')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            TEDARİK ET
+                        </button>
+                    </div>
+                    <div class="notification-item warning">
+                        <div class="notification-header">
+                            <div class="notification-title">Bölge Deposu B</div>
+                            <span class="category-badge" style="background: #2563eb;">SU</span>
+                        </div>
+                        <div class="notification-location">📍 Kartal</div>
+                        <div class="stock-progress">
+                            <div class="stock-label"><span>Stok Durumu</span><span class="mono">107/500</span></div>
+                            <div class="stock-bar">
+                                <div class="stock-fill low" style="width: 21%"></div>
+                            </div>
+                        </div>
+                        <button class="resupply-btn" onclick="resupplyWarehouse('2')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            TEDARİK ET
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="stats-row">
+                <div class="stat-card success" onclick="filterView('needsMet')">
+                    <div class="stat-header">
+                        <span class="stat-label">Karşılanan</span>
+                        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-400)">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg></div>
+                    </div>
+                    <div class="stat-value" id="needsMet">--%</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="needsMetBar" style="width: 0%; background: var(--emerald-500);">
+                        </div>
+                    </div>
+                    <div class="stat-trend">Tıkla: Detaylı görünüm</div>
+                </div>
+                <div class="stat-card danger" onclick="filterView('critical')">
+                    <div class="stat-header">
+                        <span class="stat-label">Kritik Aciliyet</span>
+                        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red-400)">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg></div>
+                    </div>
+                    <div class="stat-value" id="criticalCount">--</div>
+                    <div class="stat-trend">Acil müdahale gerekli</div>
+                </div>
+                <div class="stat-card info" onclick="filterView('routes')">
+                    <div class="stat-header">
+                        <span class="stat-label">Aktif Rotalar</span>
+                        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan-400)">
+                                <rect x="1" y="3" width="15" height="13"></rect>
+                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                            </svg></div>
+                    </div>
+                    <div class="stat-value" id="activeRoutes">--</div>
+                    <div class="stat-trend">Teslimat devam ediyor</div>
+                </div>
+                <div class="stat-card ai" onclick="filterView('ai')">
+                    <div class="stat-header">
+                        <span class="stat-label">AI Tahmin</span>
+                        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple-400)">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg></div>
+                    </div>
+                    <div class="stat-value" id="aiPrediction">--</div>
+                    <div class="stat-trend">Tükenme tahmini</div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div class="map-header">
+                    <div class="map-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                            <line x1="8" y1="2" x2="8" y2="18"></line>
+                            <line x1="16" y1="6" x2="16" y2="22"></line>
+                        </svg>
+                        GARAJ LOJİSTİK HARİTASI
+                    </div>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot full"></div> Tam
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot partial"></div> Kısmi
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot empty"></div> Stok Yok
+                        </div>
+                    </div>
+                </div>
+                <div class="map-controls">
+                    <button class="map-btn" onclick="map.zoomIn()"><svg viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg></button>
+                    <button class="map-btn" onclick="map.zoomOut()"><svg viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg></button>
+                    <button class="map-btn" onclick="map.setView([41.0082, 28.9784], 11)"><svg viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg></button>
+                </div>
+                <div class="layer-panel">
+                    <div class="layer-title">Katmanlar</div>
+                    <label class="layer-option"><input type="checkbox" checked id="layerNeeds"> Acil İhtiyaçlar</label>
+                    <label class="layer-option"><input type="checkbox" checked id="layerSupplies"> Tedarik
+                        Noktaları</label>
+                    <label class="layer-option"><input type="checkbox" checked id="layerRoutes"> Aktif Rotalar</label>
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn active" onclick="setMapView('operational')">Operasyonel</button>
+                        <button class="view-toggle-btn" onclick="setMapView('heatmap')">Isı Haritası</button>
+                    </div>
+                </div>
+                <div id="map"></div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar - AI Terminal -->
+        <aside class="right-sidebar">
+            <div class="ai-header">
+                <div class="ai-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z">
+                        </path>
+                    </svg>
+                    AI KARAR DESTEK
+                </div>
+                <div class="ai-status"></div>
+            </div>
+            <div class="ai-feed" id="logTerminal">
+                <div class="log-entry">
+                    <div class="log-indicator system"></div>
+                    <div class="log-content"><span class="log-time">--:--:--</span><span
+                            class="log-message system">[SİSTEM] AI Tahmin Motoru başlatılıyor...</span></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let map, heatmapLayer, operationalLayer;
+        let currentView = 'operational';
+
+        // Global state for needs and supplies
+        let currentNeeds = [];
+        let currentSupplies = [];
+        let activeRoutes = [];
+        let unmatchedNeedIndices = new Set();
+        let partialNeedIndices = new Set();
+        let lastMatchingDone = false;
+
+        // Track polylines for each route (for dynamic color updates)
+        let routePolylines = []; // {supplyIdx, polyline, supplyName, needName}
+
+        // Istanbul districts - separated by Bosphorus side
+        const europeanSide = [
+            { name: 'Beşiktaş', lat: 41.0430, lng: 29.0070 },
+            { name: 'Şişli', lat: 41.0602, lng: 28.9877 },
+            { name: 'Fatih', lat: 41.0186, lng: 28.9497 },
+            { name: 'Bakırköy', lat: 40.9792, lng: 28.8770 },
+            { name: 'Sarıyer', lat: 41.1672, lng: 29.0200 },
+            { name: 'Beyoğlu', lat: 41.0370, lng: 28.9850 },
+            { name: 'Gaziosmanpaşa', lat: 41.0650, lng: 28.9120 },
+            { name: 'Eyüpsultan', lat: 41.0480, lng: 28.9340 },
+            { name: 'Zeytinburnu', lat: 40.9940, lng: 28.9050 }
+        ];
+
+        const asianSide = [
+            { name: 'Kadıköy', lat: 40.9819, lng: 29.0267 },
+            { name: 'Üsküdar', lat: 41.0244, lng: 29.0153 },
+            { name: 'Maltepe', lat: 40.9343, lng: 29.1306 },
+            { name: 'Kartal', lat: 40.8898, lng: 29.1856 },
+            { name: 'Pendik', lat: 40.8756, lng: 29.2338 },
+            { name: 'Beykoz', lat: 41.1268, lng: 29.1017 },
+            { name: 'Ataşehir', lat: 40.9833, lng: 29.1167 },
+            { name: 'Ümraniye', lat: 41.0167, lng: 29.1167 },
+            { name: 'Çekmeköy', lat: 41.0333, lng: 29.1833 }
+        ];
+
+        // Bridge waypoints for crossing Bosphorus
+        const bridges = {
+            fsm: { lat: 41.0906, lng: 29.0572 },      // FSM Bridge
+            temmuz: { lat: 41.0458, lng: 29.0340 }    // 15 Temmuz Bridge
+        };
+
+        // Combine for backward compatibility
+        const istanbulLocations = [...europeanSide, ...asianSide];
+
+        // Helper to determine which side a point is on
+        function isAsianSide(lat, lng) {
+            // Bosphorus roughly at lng 29.02
+            return lng > 29.02;
+        }
+
+        // Cache for routes to avoid repeated API calls
+        const routeCache = new Map();
+
+        // Get real road route using OSRM API
+        async function getRoutePath(from, to) {
+            const cacheKey = `${from[0]},${from[1]}-${to[0]},${to[1]}`;
+
+            if (routeCache.has(cacheKey)) {
+                return routeCache.get(cacheKey);
+            }
+
+            try {
+                // OSRM demo server for routing
+                const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.code === 'Ok' && data.routes && data.routes[0]) {
+                    // Convert GeoJSON coordinates [lng, lat] to [lat, lng]
+                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    routeCache.set(cacheKey, coords);
+                    return coords;
+                }
+            } catch (error) {
+                console.warn('OSRM routing failed, using fallback:', error);
+            }
+
+            // Fallback: simple path with bridge if crossing Bosphorus
+            return getFallbackPath(from, to);
+        }
+
+        // Fallback path when OSRM fails
+        function getFallbackPath(from, to) {
+            const fromAsian = isAsianSide(from[0], from[1]);
+            const toAsian = isAsianSide(to[0], to[1]);
+
+            if (fromAsian === toAsian) {
+                const midPoint = [
+                    (from[0] + to[0]) / 2 + randomOffset() * 0.3,
+                    (from[1] + to[1]) / 2 + randomOffset() * 0.3
+                ];
+                return [from, midPoint, to];
+            } else {
+                const bridge = from[0] > 41.06 || to[0] > 41.06 ? bridges.fsm : bridges.temmuz;
+                const bridgePoint = [bridge.lat, bridge.lng];
+                return [from, bridgePoint, to];
+            }
+        }
+
+        const categories = ['Tıbbi', 'Su', 'Gıda', 'Barınma', 'Hijyen', 'Giysi'];
+        const supplyNames = ['Ana Depo', 'Yedek Depo', 'Mobil Ünite', 'Lojistik Merkez', 'Acil Stok', 'Bölge Deposu'];
+
+        // Clock
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('tr-TR', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Progress
+        function showProgress() { document.getElementById('progressContainer').classList.add('active'); }
+        function hideProgress() { document.getElementById('progressContainer').classList.remove('active'); }
+        function updateProgress(pct) {
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressText').textContent = pct + '%';
+        }
+
+        // Random helpers
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function randomChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function randomOffset() { return (Math.random() - 0.5) * 0.03; }
+
+        // Map
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([41.0082, 28.9784], 11);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+            operationalLayer = L.layerGroup().addTo(map);
+            heatmapLayer = L.heatLayer([], { radius: 35, blur: 20, gradient: { 0.2: '#ffe066', 0.4: '#ffa500', 0.6: '#ff6b35', 0.8: '#ff4444', 1.0: '#cc0000' } });
+
+            // Initial sample data
+            generateInitialData();
+        }
+
+        function generateInitialData() {
+            currentNeeds = [
+                { pos: [41.0285, 29.0265], title: 'Kadıköy Acil', cat: 'Tıbbi', qty: 150 },
+                { pos: [41.0225, 29.0165], title: 'Üsküdar Hastanesi', cat: 'Su', qty: 320 }
+            ];
+            currentSupplies = [
+                { pos: [40.9885, 28.8565], title: 'Merkez Depo A', pct: 85 },
+                { pos: [41.0125, 28.9365], title: 'Bölge Deposu B', pct: 65 }
+            ];
+
+            renderMapData();
+        }
+
+        function renderMapData() {
+            operationalLayer.clearLayers();
+            heatmapLayer.setLatLngs([]);
+
+            currentNeeds.forEach(n => addNeedMarker(n.pos, n.title, n.cat, n.qty, n.needs));
+            currentSupplies.forEach(s => addSupplyMarker(s.pos, s.title, s.pct, s.stock));
+
+            // Update sidebar
+            renderSidebar();
+        }
+
+        function renderSidebar() {
+            // Update supply list in sidebar
+            const supplyList = document.getElementById('supplyList');
+            if (supplyList && currentSupplies.length > 0) {
+                supplyList.innerHTML = currentSupplies.map((s, i) => {
+                    const stockClass = s.pct > 60 ? 'stable' : s.pct > 30 ? 'warning' : 'critical';
+                    const fillClass = s.pct > 60 ? 'high' : s.pct > 30 ? 'medium' : 'low';
+                    const units = Math.floor(s.pct * 5);
+
+                    return `
+                    <div class="notification-item ${stockClass}">
+                        <div class="notification-header">
+                            <div class="notification-title">${s.title}</div>
+                        </div>
+                        <div class="stock-progress">
+                            <div class="stock-label"><span>Stok</span><span class="mono">${units}/500 (%${s.pct})</span></div>
+                            <div class="stock-bar"><div class="stock-fill ${fillClass}" style="width: ${s.pct}%"></div></div>
+                        </div>
+                        <button class="resupply-btn" onclick="resupplyWarehouse('${i + 1}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            TEDARİK ET
+                        </button>
+                    </div>`;
+                }).join('');
+            }
+
+            // Update supply count
+            document.getElementById('supplyCount').textContent = currentSupplies.length;
+
+            // Update alert list with dynamic status
+            const alertList = document.getElementById('alertList');
+            if (alertList && currentNeeds.length > 0) {
+                alertList.innerHTML = currentNeeds.map((n, idx) => {
+                    // Check if this need is met, partial, or unmet
+                    const isUnmet = unmatchedNeedIndices.has(idx);
+                    const isPartial = partialNeedIndices.has(idx);
+                    const isMet = !isUnmet && !isPartial && lastMatchingDone;
+
+                    const statusClass = isMet ? 'stable' : isPartial ? 'warning' : 'critical';
+                    const badgeColor = isMet ? '#10b981' : isPartial ? '#f59e0b' : '#dc2626';
+                    const statusText = isMet ? 'Karşılandı' : isPartial ? 'Kısmi Tedarik' : 'Acil İhtiyaç';
+
+                    // Build needs detail HTML
+                    let needsDetail = '';
+                    if (n.needs) {
+                        needsDetail = Object.entries(n.needs).map(([cat, qty]) =>
+                            `<div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;"><span>${cat}</span><span>${qty}</span></div>`
+                        ).join('');
+                    }
+
+                    return `
+                    <div class="notification-item ${statusClass}">
+                        <div class="notification-header">
+                            <div class="notification-title">${n.title}</div>
+                            <span class="category-badge" style="background: ${badgeColor};">${statusText}</span>
+                        </div>
+                        <div style="margin-top:8px;padding:6px;background:rgba(0,0,0,0.2);border-radius:6px;">
+                            ${needsDetail}
+                            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:${isMet ? '#10b981' : '#ef4444'};margin-top:4px;padding-top:4px;border-top:1px solid #334155;">
+                                <span>Toplam</span>
+                                <span>${isMet ? '✓' : n.qty + ' adet'}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Update alert count (remaining unmet)
+            const unmetCount = unmatchedNeedIndices.size + partialNeedIndices.size;
+            document.getElementById('alertCount').textContent = lastMatchingDone ? unmetCount : currentNeeds.length;
+        }
+
+        function addNeedMarker(pos, title, cat, qty, needs) {
+            const icon = L.divIcon({ className: 'marker', html: '<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(239,68,68,0.5);animation:pulse 2s infinite;"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+
+            let popupHtml = `<b>${title}</b><br><hr style="margin:5px 0;border-color:#333;"><b>İhtiyaçlar:</b><br>`;
+            if (needs) {
+                for (const [category, amount] of Object.entries(needs)) {
+                    popupHtml += `${category}: ${amount} adet<br>`;
+                }
+                popupHtml += `<hr style="margin:5px 0;border-color:#333;"><b>Toplam: ${qty} adet</b>`;
+            } else {
+                popupHtml += `${cat}: ${qty} adet`;
+            }
+
+            L.marker(pos, { icon }).addTo(operationalLayer).bindPopup(popupHtml);
+            heatmapLayer.addLatLng([pos[0], pos[1], 1]);
+        }
+
+        function addSupplyMarker(pos, title, pct, stock) {
+            const color = pct > 50 ? '#10b981' : pct > 25 ? '#eab308' : '#ef4444';
+            const icon = L.divIcon({ className: 'marker', html: `<div style="background:${color};width:14px;height:14px;border-radius:4px;border:2px solid white;box-shadow:0 2px 8px ${color}40;"></div>`, iconSize: [14, 14], iconAnchor: [7, 7] });
+
+            let stockHtml = `<b>${title}</b><br>Kapasite: ${pct}%<br><hr style="margin:5px 0;border-color:#333;"><b>Stok Durumu:</b><br>`;
+            if (stock) {
+                for (const [cat, qty] of Object.entries(stock)) {
+                    stockHtml += `${cat}: ${qty} adet<br>`;
+                }
+            }
+            L.marker(pos, { icon }).addTo(operationalLayer).bindPopup(stockHtml);
+        }
+
+        function setMapView(view) {
+            document.querySelectorAll('.view-toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (view === 'heatmap') {
+                map.removeLayer(operationalLayer);
+                heatmapLayer.addTo(map);
+            } else {
+                map.removeLayer(heatmapLayer);
+                operationalLayer.addTo(map);
+            }
+            currentView = view;
+        }
+
+        function filterView(type) {
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            addLog('system', `[SİSTEM] ${type} filtresi uygulandı`);
+        }
+
+        // Logs
+        function addLog(type, message) {
+            const terminal = document.getElementById('logTerminal');
+            const time = new Date().toLocaleTimeString('tr-TR', { hour12: false });
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<div class="log-indicator ${type}"></div><div class="log-content"><span class="log-time">${time}</span><span class="log-message ${type}">${message}</span></div>`;
+            terminal.insertBefore(entry, terminal.firstChild);
+            if (terminal.children.length > 50) terminal.removeChild(terminal.lastChild);
+        }
+
+        // Actions
+        async function runMatching() {
+            const btn = document.getElementById('matchBtn');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="btn-icon">⏳</span> HESAPLANIYOR...';
+
+            if (currentNeeds.length === 0 || currentSupplies.length === 0) {
+                addLog('warning', '[UYARI] Eşleştirilecek ihtiyaç veya tedarik noktası yok!');
+                addLog('system', '[SİSTEM] Önce KAOS SİMÜLASYONU çalıştırın');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                return;
+            }
+
+            showProgress();
+            let p = 0;
+            const interval = setInterval(() => { p = Math.min(p + Math.random() * 8, 85); updateProgress(Math.round(p)); }, 150);
+
+            addLog('ai', '[AI] Optimal rota hesaplanıyor...');
+            addLog('system', '[SİSTEM] Stok analizi ve eşleştirme başlatıldı');
+
+            await delay(500);
+
+            // Clear existing routes but keep markers
+            renderMapData();
+
+            // Reset tracking
+            unmatchedNeedIndices = new Set();
+            partialNeedIndices = new Set();
+
+            // Calculate available stock for each supply (pct * 5 = units available)
+            const supplyStock = currentSupplies.map((s, idx) => ({ ...s, supplyIdx: idx, stock: Math.floor(s.pct * 5) }));
+
+            // Track which needs are matched
+            const matchedNeeds = new Set();
+            const routes = [];
+
+            // 1:1 matching - each supply matches to exactly one closest need
+            for (const supply of supplyStock) {
+                // Find closest unmatched need
+                const availableNeeds = currentNeeds
+                    .map((n, i) => ({ need: n, idx: i, dist: Math.hypot(n.pos[0] - supply.pos[0], n.pos[1] - supply.pos[1]) }))
+                    .filter(x => !matchedNeeds.has(x.idx))
+                    .sort((a, b) => a.dist - b.dist);
+
+                if (availableNeeds.length === 0) continue;
+
+                // Match to closest need only (1:1)
+                const { need, idx } = availableNeeds[0];
+                matchedNeeds.add(idx);
+
+                // Determine if stock is sufficient
+                const isFull = supply.stock >= need.qty;
+                const status = isFull ? 'full' : 'partial';
+
+                if (!isFull) {
+                    partialNeedIndices.add(idx);
+                }
+
+                routes.push({
+                    from: supply.pos,
+                    to: need.pos,
+                    supplyName: supply.title,
+                    needName: need.title,
+                    needIdx: idx,
+                    needQty: need.qty,
+                    status: status,
+                    supplyIdx: supply.supplyIdx
+                });
+            }
+
+            // Find unmatched needs (no supply sent)
+            for (let i = 0; i < currentNeeds.length; i++) {
+                if (!matchedNeeds.has(i)) {
+                    unmatchedNeedIndices.add(i);
+                }
+            }
+
+            updateProgress(50);
+            addLog('ai', `[AI] ${routes.length} güzergah, ${unmatchedNeedIndices.size} karşılanamayan talep`);
+
+            let fullCount = 0, partialCount = 0;
+
+            // Reset polyline tracking
+            routePolylines = [];
+
+            // Draw routes with animation
+            // Color based on supply capacity: GREEN if supply is 100%, ORANGE otherwise
+            for (let i = 0; i < routes.length; i++) {
+                const route = routes[i];
+                const path = await getRoutePath(route.from, route.to);
+
+                // Check if the source supply is at 100% capacity
+                const sourceSupply = currentSupplies[route.supplyIdx];
+                const isSupplyFull = sourceSupply.pct >= 100;
+
+                // GREEN if supply is 100%, ORANGE if <100%
+                const color = isSupplyFull ? '#10b981' : '#f59e0b';
+
+                const polyline = L.polyline(path, { color: color, weight: 5, opacity: 0.9 }).addTo(operationalLayer);
+                animateTruck(path);
+
+                // Store polyline reference for dynamic updates
+                routePolylines.push({
+                    supplyIdx: route.supplyIdx,
+                    polyline: polyline,
+                    supplyName: route.supplyName,
+                    needName: route.needName
+                });
+
+                if (isSupplyFull) {
+                    fullCount++;
+                    addLog('success', `[YEŞİL %100] ${route.supplyName} → ${route.needName}`);
+                } else {
+                    partialCount++;
+                    addLog('warning', `[TURUNCU] ${route.supplyName} → ${route.needName} (Depo %${sourceSupply.pct})`);
+                }
+
+                await delay(300);
+                updateProgress(50 + (i / (routes.length + unmatchedNeedIndices.size)) * 45);
+            }
+
+            // Draw RED lines for unmatched needs (from nearest supply)
+            for (const idx of unmatchedNeedIndices) {
+                const need = currentNeeds[idx];
+
+                // Find nearest supply to show the "failed" route
+                const nearestSupply = currentSupplies
+                    .map(s => ({ supply: s, dist: Math.hypot(need.pos[0] - s.pos[0], need.pos[1] - s.pos[1]) }))
+                    .sort((a, b) => a.dist - b.dist)[0];
+
+                if (nearestSupply) {
+                    const path = await getRoutePath(nearestSupply.supply.pos, need.pos);
+
+                    // Red dashed line for unmet needs
+                    L.polyline(path, {
+                        color: '#ef4444',
+                        weight: 4,
+                        opacity: 0.8,
+                        dashArray: '10, 10'
+                    }).addTo(operationalLayer);
+
+                    addLog('error', `[KARŞILANAMADI] ${need.title} - ${need.qty} adet ${need.cat}`);
+                }
+
+                await delay(200);
+            }
+
+            clearInterval(interval);
+            updateProgress(100);
+
+            // Calculate stats
+            const totalNeeds = currentNeeds.length;
+            const metNeeds = fullCount;
+            const metPercent = Math.round((metNeeds / totalNeeds) * 100);
+
+            document.getElementById('activeRoutes').textContent = routes.length;
+            document.getElementById('needsMet').textContent = metPercent + '%';
+            document.getElementById('needsMetBar').style.width = metPercent + '%';
+
+            addLog('success', `[RAPOR] Tam: ${fullCount}, Kısmi: ${partialCount}, Karşılanamayan: ${unmatchedNeedIndices.size}`);
+            addLog('ai', `[AI] İhtiyaç karşılama oranı: %${metPercent}`);
+
+            if (unmatchedNeedIndices.size > 0 || partialNeedIndices.size > 0) {
+                addLog('error', `[ACİL] ${unmatchedNeedIndices.size + partialNeedIndices.size} nokta için TEDARİK ET butonunu kullanın!`);
+            }
+
+            lastMatchingDone = true;
+            setTimeout(() => hideProgress(), 500);
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+
+        async function simulateChaos() {
+            const btn = document.getElementById('chaosBtn');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="btn-icon">⏳</span> SİMÜLASYON...';
+
+            showProgress();
+            let p = 0;
+            const interval = setInterval(() => { p = Math.min(p + Math.random() * 6, 85); updateProgress(Math.round(p)); }, 100);
+            addLog('error', '[KAOS] ⚠️ Afet simülasyonu başlatıldı!');
+            addLog('warning', '[UYARI] Deprem algılandı - Sistem yüksek yük altında');
+
+            await delay(500);
+            addLog('ai', '[AI] Yeni acil durum noktaları tespit ediliyor...');
+
+            // Generate RANDOM needs each time
+            const numNeeds = randomInt(4, 7);
+            const usedLocationsNeeds = new Set();
+            currentNeeds = [];
+
+            for (let i = 0; i < numNeeds; i++) {
+                let loc;
+                do {
+                    loc = randomChoice(istanbulLocations);
+                } while (usedLocationsNeeds.has(loc.name));
+                usedLocationsNeeds.add(loc.name);
+
+                // Generate needs with ALL categories
+                const needs = {};
+                for (const cat of categories) {
+                    needs[cat] = randomInt(50, 200);
+                }
+
+                currentNeeds.push({
+                    pos: [loc.lat, loc.lng],
+                    title: `${loc.name} Acil Durum`,
+                    cat: 'Tüm İhtiyaçlar',
+                    qty: Object.values(needs).reduce((a, b) => a + b, 0),
+                    needs: needs
+                });
+            }
+
+            // Generate RANDOM supplies - same count as needs for 1:1 matching
+            const numSupplies = numNeeds;
+            const usedLocationsSupplies = new Set();
+            currentSupplies = [];
+
+            for (let i = 0; i < numSupplies; i++) {
+                let loc;
+                do {
+                    loc = randomChoice(istanbulLocations);
+                } while (usedLocationsSupplies.has(loc.name) || usedLocationsNeeds.has(loc.name));
+                usedLocationsSupplies.add(loc.name);
+
+                // Generate stock for all categories
+                const stock = {};
+                for (const cat of categories) {
+                    stock[cat] = randomInt(50, 300);
+                }
+
+                currentSupplies.push({
+                    pos: [loc.lat, loc.lng],
+                    title: `Ana Depo ${loc.name}`,
+                    pct: randomInt(40, 95),
+                    stock: stock
+                });
+            }
+
+            await delay(300);
+            updateProgress(30);
+
+            // Clear and render new data
+            renderMapData();
+
+            // Log each need
+            for (let i = 0; i < currentNeeds.length; i++) {
+                const need = currentNeeds[i];
+                addLog('error', `[KRİTİK] ${need.title} - ${need.qty} adet ${need.cat} ihtiyacı`);
+                await delay(150);
+                updateProgress(30 + (i / currentNeeds.length) * 30);
+            }
+
+            addLog('ai', '[AI] Tedarik noktaları analiz ediliyor...');
+
+            // Log each supply
+            for (let i = 0; i < currentSupplies.length; i++) {
+                const supply = currentSupplies[i];
+                addLog('success', `[DEPO] ${supply.title} - %${supply.pct} kapasite`);
+                await delay(100);
+            }
+
+            clearInterval(interval);
+            updateProgress(100);
+
+            // Fit map to show all markers
+            const allPoints = [...currentNeeds.map(n => n.pos), ...currentSupplies.map(s => s.pos)];
+            map.fitBounds(allPoints, { padding: [50, 50], maxZoom: 12 });
+
+            // Update stats
+            document.getElementById('criticalCount').textContent = currentNeeds.length;
+            document.getElementById('alertCount').textContent = currentNeeds.length;
+            document.getElementById('activeRoutes').textContent = '0';
+            document.getElementById('needsMet').textContent = '0%';
+            document.getElementById('needsMetBar').style.width = '0%';
+
+            addLog('warning', `[UYARI] ${currentNeeds.length} kritik bölge tespit edildi`);
+            addLog('ai', `[AI] ${currentSupplies.length} tedarik noktası hazır`);
+            addLog('system', '[SİSTEM] Eşleştirme için ⚡ EŞLEŞTİR butonuna basın');
+
+            // Reset matching state for new chaos
+            unmatchedNeedIndices.clear();
+            partialNeedIndices.clear();
+            lastMatchingDone = false;
+
+            // Update sidebar with new needs
+            renderSidebar();
+
+            setTimeout(() => hideProgress(), 500);
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+
+        // Delay helper
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Truck animation
+        function animateTruck(path, color) {
+            const truckIcon = L.divIcon({
+                className: 'truck-marker',
+                html: '🚚',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            const truck = L.marker(path[0], { icon: truckIcon }).addTo(operationalLayer);
+
+            let step = 0;
+            const totalSteps = 60;
+            const flatPath = [];
+
+            // Create smooth path with fewer steps for faster animation
+            for (let i = 0; i < path.length - 1; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const t = j / 10;
+                    flatPath.push([
+                        path[i][0] + (path[i + 1][0] - path[i][0]) * t,
+                        path[i][1] + (path[i + 1][1] - path[i][1]) * t
+                    ]);
+                }
+            }
+            flatPath.push(path[path.length - 1]);
+
+            function move() {
+                if (step < flatPath.length) {
+                    truck.setLatLng(flatPath[step]);
+                    step += 3; // Skip steps for faster movement
+                    requestAnimationFrame(move);
+                } else {
+                    setTimeout(() => {
+                        operationalLayer.removeLayer(truck);
+                    }, 1000);
+                }
+            }
+
+            setTimeout(move, Math.random() * 500);
+        }
+
+
+
+        async function resupplyWarehouse(id) {
+            const supplyIndex = parseInt(id) - 1;
+
+            if (supplyIndex >= 0 && supplyIndex < currentSupplies.length) {
+                const supply = currentSupplies[supplyIndex];
+                const oldPct = supply.pct;
+
+                // Increase stock by 30-50%
+                supply.pct = Math.min(100, supply.pct + randomInt(30, 50));
+
+                addLog('success', `[TEDARİK] ${supply.title}: %${oldPct} → %${supply.pct}`);
+                addLog('ai', `[AI] +${supply.pct - oldPct}% stok eklendi`);
+
+                // Re-render sidebar
+                renderSidebar();
+
+                // Update route colors if this supply is now at 100%
+                if (supply.pct >= 100) {
+                    updateRouteColorsForSupply(supplyIndex);
+                }
+
+                // If matching was done before, re-match unmet needs
+                if (lastMatchingDone && (unmatchedNeedIndices.size > 0 || partialNeedIndices.size > 0)) {
+                    await rematchUnmetNeeds(supplyIndex);
+                }
+
+                // Check if all supplies are 100% - auto green all routes
+                await checkAutoGreenRoutes();
+            } else {
+                // If no specific supply, increase all
+                for (const supply of currentSupplies) {
+                    const oldPct = supply.pct;
+                    supply.pct = Math.min(100, supply.pct + randomInt(20, 40));
+                    addLog('success', `[TEDARİK] ${supply.title}: %${oldPct} → %${supply.pct}`);
+                }
+                addLog('ai', '[AI] Tüm depolar yeniden stoklandı');
+                renderSidebar();
+
+                if (lastMatchingDone) {
+                    await rematchUnmetNeeds(-1);
+                }
+
+                // Check if all supplies are 100% - auto green all routes
+                await checkAutoGreenRoutes();
+            }
+        }
+
+        // Update route colors for a specific supply when it reaches 100%
+        function updateRouteColorsForSupply(supplyIdx) {
+            let updatedCount = 0;
+
+            for (const route of routePolylines) {
+                if (route.supplyIdx === supplyIdx) {
+                    // Turn this route GREEN (supply is now at 100%)
+                    route.polyline.setStyle({ color: '#10b981' });
+                    addLog('success', `[YEŞİL %100] ${route.supplyName} → ${route.needName} (Depo %100)`);
+                    updatedCount++;
+                }
+            }
+
+            if (updatedCount > 0) {
+                addLog('ai', `[AI] ${updatedCount} rota yeşile döndü!`);
+            }
+        }
+
+        // When all supplies are 100%, make all routes green
+        async function checkAutoGreenRoutes() {
+            const allFull = currentSupplies.every(s => s.pct >= 100);
+
+            if (allFull && lastMatchingDone) {
+                addLog('success', '[OTOMATİK] Tüm depolar %100 kapasitede!');
+
+                // Clear all unmet tracking
+                unmatchedNeedIndices.clear();
+                partialNeedIndices.clear();
+
+                // Redraw all routes as green
+                operationalLayer.clearLayers();
+                currentNeeds.forEach(n => addNeedMarker(n.pos, n.title, n.cat, n.qty, n.needs));
+                currentSupplies.forEach(s => addSupplyMarker(s.pos, s.title, s.pct, s.stock));
+
+                for (const need of currentNeeds) {
+                    const nearestSupply = currentSupplies
+                        .map(s => ({ supply: s, dist: Math.hypot(need.pos[0] - s.pos[0], need.pos[1] - s.pos[1]) }))
+                        .sort((a, b) => a.dist - b.dist)[0];
+
+                    if (nearestSupply) {
+                        const path = await getRoutePath(nearestSupply.supply.pos, need.pos);
+                        L.polyline(path, { color: '#10b981', weight: 5, opacity: 0.9 }).addTo(operationalLayer);
+                        animateTruck(path);
+                    }
+                }
+
+                // Update all stats
+                document.getElementById('criticalCount').textContent = '0';
+                document.getElementById('needsMet').textContent = '100%';
+                document.getElementById('needsMetBar').style.width = '100%';
+                document.getElementById('activeRoutes').textContent = currentNeeds.length;
+
+                renderSidebar();
+                addLog('ai', '[AI] Tüm ihtiyaçlar yeşil rotalarla karşılandı! 🎉');
+            }
+        }
+
+        async function rematchUnmetNeeds(resuppliedIdx) {
+            if (unmatchedNeedIndices.size === 0 && partialNeedIndices.size === 0) return;
+
+            addLog('system', '[SİSTEM] Karşılanamayan talepler yeniden değerlendiriliyor...');
+
+            // Get all unmet need indices
+            const needsToMatch = [...unmatchedNeedIndices, ...partialNeedIndices];
+
+            // Calculate new available stock
+            const supplyStock = currentSupplies.map(s => ({ ...s, stock: Math.floor(s.pct * 5) }));
+
+            let newFullCount = 0;
+
+            for (const needIdx of needsToMatch) {
+                const need = currentNeeds[needIdx];
+
+                // Find best supply with available stock
+                const availableSupplies = supplyStock
+                    .map((s, i) => ({ supply: s, idx: i, dist: Math.hypot(need.pos[0] - s.pos[0], need.pos[1] - s.pos[1]) }))
+                    .filter(x => x.supply.stock >= need.qty)
+                    .sort((a, b) => a.dist - b.dist);
+
+                if (availableSupplies.length > 0) {
+                    const best = availableSupplies[0];
+                    best.supply.stock -= need.qty;
+
+                    // Draw GREEN route (now fully matched)
+                    const path = await getRoutePath(best.supply.pos, need.pos);
+
+                    L.polyline(path, { color: '#10b981', weight: 5, opacity: 0.9 }).addTo(operationalLayer);
+                    animateTruck(path);
+
+                    addLog('success', `[TAM] ${best.supply.title} → ${need.title}`);
+
+                    // Remove from unmet sets
+                    unmatchedNeedIndices.delete(needIdx);
+                    partialNeedIndices.delete(needIdx);
+                    newFullCount++;
+
+                    await delay(300);
+                }
+            }
+
+            if (newFullCount > 0) {
+                addLog('ai', `[AI] ${newFullCount} ek teslimat rotası oluşturuldu`);
+
+                // Update stats
+                const totalNeeds = currentNeeds.length;
+                const metNeeds = totalNeeds - unmatchedNeedIndices.size - partialNeedIndices.size;
+                const metPercent = Math.round((metNeeds / totalNeeds) * 100);
+
+                document.getElementById('needsMet').textContent = metPercent + '%';
+                document.getElementById('needsMetBar').style.width = metPercent + '%';
+            }
+
+            if (unmatchedNeedIndices.size === 0 && partialNeedIndices.size === 0) {
+                addLog('success', '[BAŞARILI] Tüm ihtiyaçlar karşılandı!');
+            }
+        }
+
+
+        async function refreshAll() {
+            try {
+                const statsRes = await fetch(`${API_BASE}/api/dashboard-stats`);
+                const stats = await statsRes.json();
+                document.getElementById('needsMet').textContent = Math.round(stats.percentageNeedsMet) + '%';
+                document.getElementById('needsMetBar').style.width = stats.percentageNeedsMet + '%';
+                document.getElementById('criticalCount').textContent = stats.criticalNeeds?.length || 0;
+                document.getElementById('alertCount').textContent = stats.criticalNeeds?.length || 0;
+            } catch (e) {
+                document.getElementById('needsMet').textContent = '87%';
+                document.getElementById('needsMetBar').style.width = '87%';
+                document.getElementById('criticalCount').textContent = '4';
+                document.getElementById('alertCount').textContent = '4';
+            }
+
+            document.getElementById('activeRoutes').textContent = '3';
+            document.getElementById('aiPrediction').textContent = (4 + Math.random() * 6).toFixed(1) + 'h';
+            document.getElementById('supplyCount').textContent = '8';
+        }
+
+        // Init
+        initMap();
+        refreshAll();
+        addLog('success', '[SİSTEM] GARAJ Yönetim Merkezi başlatıldı');
+        addLog('ai', '[AI] Tahmin modeli yüklendi');
+        setInterval(refreshAll, 20000);
+    </script>
+</body>
+
+</html>

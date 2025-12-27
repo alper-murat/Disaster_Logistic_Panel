@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "y+sR4o7covsf366jfBFE6eRfLcWLjZJirUDoSRWVlv8=",
+  "Source": "DisasterLogistics",
+  "BasePath": "_content/DisasterLogistics",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "DisasterLogistics/wwwroot",
+      "Source": "DisasterLogistics",
+      "ContentRoot": "/Users/alpermurat/Desktop/Disaster_Logistic_Panel/wwwroot/",
+      "BasePath": "_content/DisasterLogistics",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/Users/alpermurat/Desktop/Disaster_Logistic_Panel/wwwroot/index.html",
+      "SourceId": "DisasterLogistics",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/alpermurat/Desktop/Disaster_Logistic_Panel/wwwroot/",
+      "BasePath": "_content/DisasterLogistics",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/index.html"
+    }
+  ]
+}
